@@ -118,7 +118,7 @@ function setChartData(dailyData) {
 
 const parseData = (data) => {
     const dailyData = {};
-    const units = data.split('현재시간');
+    const units = data.split('--');
     units.forEach((unit, index) => {
         if (index == 0) return;
         const lines = unit.split('\n');
