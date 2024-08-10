@@ -1,5 +1,11 @@
 // 파일 경로를 지정합니다.
 const filePath = 'data.txt';
+let dailyData = {};
+let datasets = [];
+let chart;
+const checkedDates = [];
+const checkedRooms = ['c', 'l'];
+
 
 // Fetch API를 사용하여 파일 내용을 가져옵니다.
 fetch(filePath)
@@ -7,7 +13,7 @@ fetch(filePath)
     .then(data => {
         // 파일 내용을 출력합니다.
         // document.getElementById('file-content').textContent = data;
-        const dailyData = parseData(data);
+        dailyData = parseData(data);
         setChartData(dailyData);
     })
     .catch(error => {
@@ -19,57 +25,41 @@ const ctx = document.getElementById('myChart');
 
 function setChartData(dailyData) {
     console.log(dailyData);
-    const testDate = '2024-8-8';
-
-
-    const datasets = [
-        {
-            label: 'cozy',
-            data: dailyData[testDate]?.map((state) => { return {x: state.time, y: state.c_temp} }),
-        },
-        {
-            label: 'livingRoom',
-            data: dailyData[testDate]?.map((state) => { return {x: state.time, y: state.l_temp} }),
+    Object.keys(dailyData).forEach((date, index) => {
+        const daysWrapper = document.getElementById('days');
+        const day = document.createElement('input');
+        day.type = 'checkbox';
+        day.id = date;
+        day.value = date;
+        day.addEventListener('click', (e) => {
+            // drawChart(dailyData, date);
+            console.log(e.target.checked);
+            
+            if(e.target.checked) {
+                checkedDates.push(e.target.value);
+            } else {
+                checkedDates.splice(checkedDates.indexOf(e.target.value), 1);
+            }
+            setDataSet(checkedDates);
+        });
+        if(index == Object.keys(dailyData).length - 1) {
+            day.click();
         }
-    ]
-    //chart
-    // const labels = dailyData[testDate]?.map((state) => state.getOnlyTimeString());
-    // const datapoints = dailyData[testDate]?.map((state) => state.c_temp);
-    // console.log(labels);
-    // console.log(datapoints);
-    // const data = {
-    //     labels: labels,
-        // datasets: [
-        //     {
-        //         label: 'Cubic interpolation (monotone)',
-        //         data: datapoints,
-        //         borderColor: 'red',
-        //         fill: false,
-        //         cubicInterpolationMode: 'monotone',
-        //         tension: 0.4
-        //     },
-        // {
-        //     label: 'Cubic interpolation',
-        //     data: datapoints,
-        //     borderColor: "blue",
-        //     fill: false,
-        //     tension: 0.4
-        // },
-        // {
-        //     label: 'Linear interpolation (default)',
-        //     data: datapoints,
-        //     borderColor: "green",
-        //     fill: false
-        // }
-        // ]
-    // };
-    const data2 = {
-        datasets: datasets
-    };
+        const label = document.createElement('label');
+        label.htmlFor = date;
+        label.textContent = date;
+        daysWrapper.appendChild(day);
+        daysWrapper.appendChild(label);
+    });
+
+
+    setDataSet([Object.keys(dailyData).pop()]);
 
     const config = {
         type: 'line',
-        data: data2,
+        data: {
+            datasets: datasets
+        },
         options: {
             responsive: true,
             plugins: {
@@ -85,8 +75,16 @@ function setChartData(dailyData) {
                 x: {
                     type: 'time',
                     time: {
-                        unit: 'hour'
-                    }
+                        unit: 'hour',
+                        
+
+                    },
+                    min: (new Date(0, 0, 0, 7, 0)).getTime(),
+                    max: (new Date(0, 0, 0, 23, 0)).getTime(),
+                },
+                y: {
+                    min: 28,
+                    max: 37,
                 }
             }
             // scales: {
@@ -109,7 +107,12 @@ function setChartData(dailyData) {
         },
     };
 
-    new Chart(ctx, config);
+    chart = new Chart(ctx, config);
+    
+
+
+
+    
 }
 
 
@@ -169,8 +172,40 @@ class State {
     getOnlyTimeString() {
         return `${this.time.getHours()}:${this.time.getMinutes()}`;
     }
+    getTimeSameDay() {
+        return new Date(0, 0, 0, this.time.getHours(), this.time.getMinutes());
+    }
 
 }
 
-const testState = new State('2024. 8. 8. 오전 12:42', '30°C', '50%', '30°C', '50%');
-console.warn(testState.time)
+const setDataSet = (dates) => {
+    datasets = [];
+    dates.forEach((date) => {
+        if(checkedRooms.includes('c')) 
+            datasets.push({
+                label: date + 'cozy',
+                data: dailyData[date]?.map((state) => { return {x: state.getTimeSameDay(), y: state.c_temp} }),
+            });
+
+        if(checkedRooms.includes('l'))
+            datasets.push({
+                label: date + 'livingRoom',
+                data: dailyData[date]?.map((state) => { return {x: state.getTimeSameDay(), y: state.l_temp} }),
+            });
+    });
+
+    if(chart) {
+        chart.data.datasets = datasets;
+        chart.update();
+    }
+    
+
+}
+const changeRoom = (e) => {
+    if(e.checked) {
+        checkedRooms.push(e.value);
+    } else {
+        checkedRooms.splice(checkedRooms.indexOf(e.value), 1);
+    }
+    setDataSet(checkedDates);
+}
