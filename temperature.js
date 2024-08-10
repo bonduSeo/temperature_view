@@ -65,7 +65,7 @@ function setChartData(dailyData) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Chart.js Line Chart - Cubic interpolation mode'
+                    text: 'judy house'
                 },
             },
             interaction: {
